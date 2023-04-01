@@ -40,7 +40,7 @@ https://sc1.checkpoint.com/documents/latest/APIs/#introduction~v1.9%20
 Once required task is done it then provide below options:
 
 ```
-1) Publish              3) Go back to sub menu  5) Quit Program
+1) Publish              3) Sub Menu 2  5) Quit Program
 2) Discard              4) Main Menu
 ```
 If you need to do any more task before publishing then you can do the same selecting 3rd option and then perform the task. 
@@ -74,6 +74,19 @@ If you select 2nd option, it will give you below options
 ```
 Depending on you selecion script will take action.
 
+Here's a brief explanation of the steps that the function performs:
+```
+1. It prompts the user to enter the name of a group if objects from signle group is to be extracted.
+2. In case of multiple groups, it prompts the user to enter the name of a file containing a list of group names.
+3. It reads the names from the file and extracts data depending on the selection.
+4. It prompts the user to select an option for exporting 
+      1. IPv4 
+      2. IPv6
+      3. Both IPv4 and IPv6 addresses
+5. It exports the selected addresses using the "mgmt_cli" command and saves the output to a CSV file.
+6. It will then create a folder with name "exported_files" in the current directory.
+7. All the files that are created will be saved in the above mentioned folder.
+```
 The script uses the "jq" command-line tool to parse the JSON output of the **"mgmt_cli"** command and extract the relevant information.
 
 To execute this program, follow these steps:
@@ -88,7 +101,7 @@ To execute this program, follow these steps:
     
     5. Follow the prompts and enter any required inputs.
     
-    7. The program will execute the selected function and display the results.
+    7. The program will execute the selected function and provide the results.
 
 
 
