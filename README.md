@@ -19,7 +19,7 @@ After pressing enter it provides you with 3 options as below,
 ```
 On selecting 1st option, it first asks for credentials of "Smartconsole" to create a session and once the session is created it gives you a sub options to proceed further accordingly.
 
-![image](https://user-images.githubusercontent.com/75925433/229118374-c40659d5-6b31-4748-aad4-8490cf6642c1.png)
+![image](https://user-images.githubusercontent.com/75925433/229266389-cdc9ae32-8134-4eaf-9409-3eaf4b09ebba.png)
 
 ```
 Note:                                                             
@@ -48,21 +48,22 @@ If you need to do any more task before publishing then you can do the same selec
 ```
 Note: 
 
-1. Do not select 4th Option until you "Publish" or "Discard" the changes you have already done. 
-This is because if you select 4th option without publishing or discarding the session then you 
-won't be able to "Publish" or "Discard" the changes as the session on which you were working will 
+1. Do not select 4th Option until you "Publish" or "Discard" changes you have already done. 
+This is because if you select 4th option without publishing or discarding the session then 
+you won't be able to "Publish" or "Discard" as the session on which you were working will 
 get discontinued. 
 
-2. In such cases, go to smartconsole and then go to "Manage & Settings > Sessions" and select 
-the relevent session, right click on it and take necessary action.
+2. In case if you selected 4th option without publishing or discarding then go to smartconsole 
+and then go to "Manage & Settings > Sessions" and select the relevent session, right click on 
+it and take necessary action from there.
 
-3. I have given that option in case if you have done all the changes and now want to go and do 
-some tasks on exporting objects.
+3. I have given that option in case if you have done all the changes and now you want to go and 
+do some tasks related to exporting objects without exiting the program.
 ```
 
 Other than Importing, this script can export objects from groups which is not possible via smartconsole.
 
-If you select 2nd option, it will give you below options 
+If you select 2nd option from Main Menu, it will give you below options to proceed further,
 
 ```
 1) Export objects from network group
@@ -87,7 +88,7 @@ Here's a brief explanation of the steps that the function performs:
 6. It will then create a folder with name "exported_files" in the current directory.
 7. All the files that are created will be saved in the above mentioned folder.
 ```
-The script uses the "jq" command-line tool to parse the JSON output of the **"mgmt_cli"** command and extract the relevant information.
+This script uses the "jq" command-line tool to parse the JSON output of the **"mgmt_cli"** command and extract the relevant information.
 
 To execute this program, follow these steps:
 
