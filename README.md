@@ -13,7 +13,7 @@ This program is divided into multiple functions to better understand the working
 After pressing enter it provides you with 3 options as below,
 
 ```
-1) Create Objects
+1) Create or Add Objects
 2) Export Objects
 3) Quit Program
 ```
