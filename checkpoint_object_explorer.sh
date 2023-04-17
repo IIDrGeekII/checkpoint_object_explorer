@@ -12,6 +12,7 @@ RED="\e[1;91m"
 CYAN="\033[36m"
 MAGENTA="\033[35m"
 YELLOW="\033[33m"
+count=0
 
 ###############################################################################################
 ###############################################################################################
@@ -37,7 +38,7 @@ function box_out()
 ###############################################################################################
 
 cleanup() {
-        rm -rf ~/junk > /dev/null
+        rm -rf ./junk > /dev/null
   }
 
 ###############################################################################################
@@ -120,11 +121,11 @@ change()
 echo ""
 printf "\nSelect option: \n"
 echo ""
-change=("Publish" "Discard" "Sub Menu 2" "Main Menu" "Quit Program")
+change=("Publish" "Discard" "Go back to sub menu" "Main Menu" "Quit Program")
 
 select menu in "${change[@]}"; do
 
-if [ "$menu" = "Sub Menu 2" ]; then
+if [ "$menu" = "Go back to sub menu" ]; then
         createobject
         elif [ "$menu" = "Main Menu" ]; then
         mainmenu
@@ -156,33 +157,9 @@ select opt in "${mainmenu[@]}"; do
         quit
         elif [ "$opt" = "Create or Add Objects" ]; then
 sessioncreator
-creaddobject
+createobject
         elif [ "$opt" = "Export Objects" ]; then
 exportobject
-        else
-#if no valid option is chosen, chastise the user
-        echo "That's not a valid option! Hit ENTER to show menu."
-        fi
-done
-
-}
-
-###############################################################################################
-###############################################################################################
-
-creaddobject()
-{
-
-printf "\nSelect option to continue: \n"
-echo ""
-creaddobject=("Create Objects" "Add Objects" "Quit Program")
-select creadd in "${creaddobject[@]}"; do
-        if [ "$creadd" = "Quit Program" ]; then
-        quit
-        elif [ "$creadd" = "Create Objects" ]; then
-createobject
-        elif [ "$creadd" = "Add Objects" ]; then
-groupadder
         else
 #if no valid option is chosen, chastise the user
         echo "That's not a valid option! Hit ENTER to show menu."
@@ -219,24 +196,26 @@ if [ ! -d "$folder" ]; then
   # Folder doesn't exist, create it
   mkdir "$folder"
 fi
-mgmt_cli login user "$username" password "$password" > ~/junk/session
-input=$(grep -o "\S*" ~/junk/session | grep -i "sid" | sed "s/://g")
+mgmt_cli login user "$username" password "$password" > ./junk/session
+input=$(grep -o "\S*" ./junk/session | grep -i "sid" | sed "s/://g")
 #sleep 3
 if [ "$input" = "sid" ]; then
 
 printf "${YELLOW}\nSession created successfully.\n${END}"
-printf "${MAGENTA}\n`grep -i "sid\|uid" ~/junk/session | grep -v "user-uid"`\n${END}"
-session=$(echo ~/junk/session)
+printf "${MAGENTA}\n`grep -i "sid\|uid" ./junk/session | grep -v "user-uid"`\n${END}"
+session=$(echo ./junk/session)
+sessionuid=$(grep '^uid:' ./junk/session | awk '{print $2}')
 spin=$(printf "${CYAN}\nScanning database ...${END}")
 copy
 #sleep 7
 printf "${YELLOW}\nDatabase scanned successfully.\n${END}"
 sleep 0.5
+echo ""
 fi
 
 if [ "$input" != "sid" ]; then
 
-printf "${RED}\n`grep -i "message" ~/junk/session`\n${END}"
+printf "${RED}\n`grep -i "message" ./junk/session`\n${END}"
 printf "\n${RED}Exiting with error..\n${END}"
 sleep 3
 printf "\n${RED}Please try again by running the script with correct credentials.\n${END}"
@@ -254,8 +233,7 @@ fi
 createobject()
 {
 
-echo ""
-createobject=("Host Object" "Network Object" "Service TCP Object" "Service UDP Object" "Sub Menu 1" "Main Menu" "Quit Program")
+createobject=("Host Object" "Network Subnet" "Service TCP Object" "Service UDP Object" "Add Objects to group or groups" "Main Menu" "Quit Program")
 
 box_out "Note:" " " "If creating .csv file manually, make sure to use below parameters:" "1. Host Object: name,ip-address" "2. Network Subnet: name,subnet,mask-length" "3. Service UDP Object: name,port (eg.,2 or 2-10)" "4. Service TCP Object: name,port (eg.,2 or 2-10)" "5. Add Objects to group or groups : name,members.add"
 
@@ -267,7 +245,7 @@ if [ "$submenu" = "Host Object" ]; then
 hostcreator
 change
 
-elif [ "$submenu" = "Network Object" ]; then
+elif [ "$submenu" = "Network Subnet" ]; then
 networkcreator
 change
 
@@ -279,8 +257,8 @@ elif [ "$submenu" = "Service UDP Object" ]; then
 udpcreator
 change
 
-elif [ "$submenu" = "Sub Menu 1" ]; then
-creaddobject
+elif [ "$submenu" = "Add Objects to group or groups" ]; then
+groupadder
 change
 
 elif [ "$submenu" = "Main Menu" ]; then
@@ -302,29 +280,55 @@ hostcreator()
 
 printf "\nEnter following details to create API compatible file:"
 printf "\n"
+
+while true; do
+
 printf "\n${GREEN}Filename containing list of IP objects: ${END}"
 
 read list
 
-grep -v '^[[:space:]]*$' $list > ~/junk/sortedlist
+    if [ ! -f "$list" ]; then
+        # Increment the counter for incorrect filename
+        ((count++))
 
-blank=$(echo ~/junk/sortedlist)
+        # Check if the counter has reached 5
+        if [ $count -eq 5 ]; then
+            echo "Incorrect filename entered 5 times. Please check the filename again & then try again."
+		echo "Exiting the program..."
+		mgmt_cli disconnect uid $sessionuid -s "$session"   
+            quit
+        fi
+
+        # File does not exist, output message to user
+        echo "File not found."
+    
+    else
+
+        # File exists,
+
+grep -v '^[[:space:]]*$' $list > ./junk/sortedlist
+
+blank=$(echo ./junk/sortedlist)
 
 printf "${GREEN}Word that needs to get combined with the above list(eg.,IP_): ${END}"
 
 read tmp
 
-printf "$tmp%s\n" $(< $blank) > ~/junk/iplist
+printf "$tmp%s\n" $(< $blank) > ./junk/iplist
 
-file=$(echo ~/junk/iplist)
+file=$(echo ./junk/iplist)
 
-paste -d, $file $blank > ~/junk/outfin
+paste -d, $file $blank > ./junk/outfin
 
-sed -i '1s/^/name,ip-address \n/' ~/junk/outfin
+sed -i '1s/^/name,ip-address \n/' ./junk/outfin
 
-call=$(echo ~/junk/outfin)
+call=$(echo ./junk/outfin)
 
 time mgmt_cli add host --batch "$call" -s "$session"
+
+fi
+
+done
 
 ##################
 
@@ -336,7 +340,7 @@ if [ "$groupinput" = "y" ]; then
 
         printf "\n1. Single Group"
         printf "\n2. Multiple Groups"
-	  echo ""
+          echo ""
         printf "${GREEN}\nSelect option from above[1/2]: ${END}"
 read groupoption
 
@@ -345,11 +349,11 @@ read groupoption
 printf "\n${GREEN}Enter group name: ${END}"
 read name1
 
-printf "$name1,%s\n" $(< $file) > ~/junk/iplistout
+printf "$name1,%s\n" $(< $file) > ./junk/iplistout
 
-sed -i '1s/^/name,members.add \n/' ~/junk/iplistout
+sed -i '1s/^/name,members.add \n/' ./junk/iplistout
 
-callout=$(echo ~/junk/iplistout)
+callout=$(echo ./junk/iplistout)
 
 time mgmt_cli set group --batch "$callout" -s "$session"
 
@@ -365,11 +369,11 @@ read groupfile
 awk -v OFS="," -v ORS="\r\n" '
     NR==FNR && NF>0 {a[++n]=$0; next}
     NF>0 {for (i=1; i<=n; i++) print $0, a[i]}
-' $file $groupfile > ~/junk/compactlist
+' $file $groupfile > ./junk/compactlist
 
-sed -i '1s/^/name,members.add \n/' ~/junk/compactlist
+sed -i '1s/^/name,members.add \n/' ./junk/compactlist
 
-deck1=$(echo ~/junk/compactlist)
+deck1=$(echo ./junk/compactlist)
 
 time mgmt_cli set group --batch "$deck1" -s "$session"
 
@@ -399,28 +403,28 @@ printf "\n"
 printf "${GREEN}Filename containing list of Network: ${END}"
 read list2
 
-grep -v '^[[:space:]]*$' $list2 > ~/junk/sortedlist2
+grep -v '^[[:space:]]*$' $list2 > ./junk/sortedlist2
 
-blank2=$(echo ~/junk/sortedlist2)
+blank2=$(echo ./junk/sortedlist2)
 
 printf "${GREEN}Word that needs to get combined with the above list(eg.,NET_): ${END}"
 read tmp2
 printf "${GREEN}Filename containing list of mask length(eg.,(16,24)): ${END}"
 read mask2
 
-grep -v '^[[:space:]]*$' $mask2 > ~/junk/sortedmask2
+grep -v '^[[:space:]]*$' $mask2 > ./junk/sortedmask2
 
-blankmask2=$(echo ~/junk/sortedmask2)
+blankmask2=$(echo ./junk/sortedmask2)
 
-printf "$tmp2%s\n" $(< $blank2) > ~/junk/iplist2
+printf "$tmp2%s\n" $(< $blank2) > ./junk/iplist2
 
-file2=$(echo ~/junk/iplist2)
+file2=$(echo ./junk/iplist2)
 
-paste -d, $file2 $blank2 $blankmask2 > ~/junk/outfin2
+paste -d, $file2 $blank2 $blankmask2 > ./junk/outfin2
 
-sed -i '1s/^/name,subnet,mask-length \n/' ~/junk/outfin2
+sed -i '1s/^/name,subnet,mask-length \n/' ./junk/outfin2
 
-call2=$(echo ~/junk/outfin2)
+call2=$(echo ./junk/outfin2)
 
 time mgmt_cli add network --batch "$call2" -s "$session"
 
@@ -434,7 +438,7 @@ if [ "$groupinput2" = "y" ]; then
 
         printf "\n1. Single Group"
         printf "\n2. Multiple Groups"
-	  echo ""
+          echo ""
         printf "${GREEN}\nSelect option from above[1/2]: ${END}"
 read groupoption2
 
@@ -443,11 +447,11 @@ read groupoption2
 printf "\n${GREEN}Enter group name: ${END}"
 read name2
 
-printf "$name2,%s\n" $(< $file2) > ~/junk/iplistout2
+printf "$name2,%s\n" $(< $file2) > ./junk/iplistout2
 
-sed -i '1s/^/name,members.add \n/' ~/junk/iplistout2
+sed -i '1s/^/name,members.add \n/' ./junk/iplistout2
 
-callout2=$(echo ~/junk/iplistout2)
+callout2=$(echo ./junk/iplistout2)
 
 time mgmt_cli set group --batch "$callout2" -s "$session"
 
@@ -463,11 +467,11 @@ read groupfile2
 awk -v OFS="," -v ORS="\r\n" '
     NR==FNR && NF>0 {a[++n]=$0; next}
     NF>0 {for (i=1; i<=n; i++) print $0, a[i]}
-' $file2 $groupfile2 > ~/junk/compactlist2
+' $file2 $groupfile2 > ./junk/compactlist2
 
-sed -i '1s/^/name,members.add \n/' ~/junk/compactlist2
+sed -i '1s/^/name,members.add \n/' ./junk/compactlist2
 
-deck2=$(echo ~/junk/compactlist2)
+deck2=$(echo ./junk/compactlist2)
 
 time mgmt_cli set group --batch "$deck2" -s "$session"
 
@@ -497,23 +501,23 @@ printf "\n${GREEN}Filename containing list of TCP ports: ${END}"
 
 read list3
 
-grep -v '^[[:space:]]*$' $list3 > ~/junk/sortedlist3
+grep -v '^[[:space:]]*$' $list3 > ./junk/sortedlist3
 
-blank3=$(echo ~/junk/sortedlist3)
+blank3=$(echo ./junk/sortedlist3)
 
 printf "${GREEN}Word that needs to get combined with the above list(eg.,TCP_): ${END}"
 
 read tmp3
 
-printf "$tmp3%s\n" $(< $blank3) > ~/junk/iplist3
+printf "$tmp3%s\n" $(< $blank3) > ./junk/iplist3
 
-file3=$(echo ~/junk/iplist3)
+file3=$(echo ./junk/iplist3)
 
-paste -d, $file3 $blank3 > ~/junk/outfin3
+paste -d, $file3 $blank3 > ./junk/outfin3
 
-sed -i '1s/^/name,port \n/' ~/junk/outfin3
+sed -i '1s/^/name,port \n/' ./junk/outfin3
 
-call3=$(echo ~/junk/outfin3)
+call3=$(echo ./junk/outfin3)
 
 time mgmt_cli add service-tcp --batch "$call3" -s "$session"
 
@@ -527,7 +531,7 @@ if [ "$groupinput3" = "y" ]; then
 
         printf "\n1. Single Group"
         printf "\n2. Multiple Groups"
-	  echo ""
+          echo ""
         printf "${GREEN}\nSelect option from above[1/2]: ${END}"
 read groupoption3
 
@@ -536,11 +540,11 @@ read groupoption3
 printf "\n${GREEN}Enter group name: ${END}"
 read name3
 
-printf "$name3,%s\n" $(< $file3) > ~/junk/iplistout3
+printf "$name3,%s\n" $(< $file3) > ./junk/iplistout3
 
-sed -i '1s/^/name,members.add \n/' ~/junk/iplistout3
+sed -i '1s/^/name,members.add \n/' ./junk/iplistout3
 
-callout3=$(echo ~/junk/iplistout3)
+callout3=$(echo ./junk/iplistout3)
 
 time mgmt_cli set service-group --batch "$callout3" -s "$session"
 
@@ -556,11 +560,11 @@ read groupfile3
 awk -v OFS="," -v ORS="\r\n" '
     NR==FNR && NF>0 {a[++n]=$0; next}
     NF>0 {for (i=1; i<=n; i++) print $0, a[i]}
-' $file3 $groupfile3 > ~/junk/compactlist3
+' $file3 $groupfile3 > ./junk/compactlist3
 
-sed -i '1s/^/name,members.add \n/' ~/junk/compactlist3
+sed -i '1s/^/name,members.add \n/' ./junk/compactlist3
 
-deck3=$(echo ~/junk/compactlist3)
+deck3=$(echo ./junk/compactlist3)
 
 time mgmt_cli set service-group --batch "$deck3" -s "$session"
 
@@ -590,23 +594,23 @@ printf "\n${GREEN}Filename containing list of UDP ports: ${END}"
 
 read list4
 
-grep -v '^[[:space:]]*$' $list4 > ~/junk/sortedlist4
+grep -v '^[[:space:]]*$' $list4 > ./junk/sortedlist4
 
-blank4=$(echo ~/junk/sortedlist4)
+blank4=$(echo ./junk/sortedlist4)
 
 printf "${GREEN}Word that needs to get combined with the above list(eg.,UDP_): ${END}"
 
 read tmp4
 
-printf "$tmp4%s\n" $(< $blank4) > ~/junk/iplist4
+printf "$tmp4%s\n" $(< $blank4) > ./junk/iplist4
 
-file4=$(echo ~/junk/iplist4)
+file4=$(echo ./junk/iplist4)
 
-paste -d, $file4 $blank4 > ~/junk/outfin4
+paste -d, $file4 $blank4 > ./junk/outfin4
 
-sed -i '1s/^/name,port \n/' ~/junk/outfin4
+sed -i '1s/^/name,port \n/' ./junk/outfin4
 
-call4=$(echo ~/junk/outfin4)
+call4=$(echo ./junk/outfin4)
 
 time mgmt_cli add service-udp --batch "$call4" -s "$session"
 
@@ -620,7 +624,7 @@ if [ "$groupinput4" = "y" ]; then
 
         printf "\n1. Single Group"
         printf "\n2. Multiple Groups"
-	  echo ""
+          echo ""
         printf "${GREEN}\nSelect option from above[1/2]: ${END}"
 read groupoption4
 
@@ -629,11 +633,11 @@ read groupoption4
 printf "\n${GREEN}Enter group name: ${END}"
 read name4
 
-printf "$name4,%s\n" $(< $file4) > ~/junk/iplistout4
+printf "$name4,%s\n" $(< $file4) > ./junk/iplistout4
 
-sed -i '1s/^/name,members.add \n/' ~/junk/iplistout4
+sed -i '1s/^/name,members.add \n/' ./junk/iplistout4
 
-callout4=$(echo ~/junk/iplistout4)
+callout4=$(echo ./junk/iplistout4)
 
 time mgmt_cli set service-group --batch "$callout4" -s "$session"
 
@@ -649,11 +653,11 @@ read groupfile4
 awk -v OFS="," -v ORS="\r\n" '
     NR==FNR && NF>0 {a[++n]=$0; next}
     NF>0 {for (i=1; i<=n; i++) print $0, a[i]}
-' $file4 $groupfile4 > ~/junk/compactlist4
+' $file4 $groupfile4 > ./junk/compactlist4
 
-sed -i '1s/^/name,members.add \n/' ~/junk/compactlist4
+sed -i '1s/^/name,members.add \n/' ./junk/compactlist4
 
-deck4=$(echo ~/junk/compactlist4)
+deck4=$(echo ./junk/compactlist4)
 
 time mgmt_cli set service-group --batch "$deck4" -s "$session"
 
@@ -678,12 +682,12 @@ groupadder()
 {
 
 echo ""
-box_out "Note:" " " "1. This option requires input file which is ready to execute." "2. File should only contain name of objects that needs to be added in a group" "3. List of group should only contain names of groups." "4. Add Objects to group or groups : name,members.add"
+box_out "Note:" " " "1. This option requires input file which is ready to execute." "2. File should only contain name of objects that needs to be added in a group" "3. List of group should only contain names of groups."
 
         printf "\n1. Object Group"
         printf "\n2. Service Group"
         printf "\n3. Return to Sub Menu"
-	  echo ""
+          echo ""
         printf "${GREEN}\nSelect option from above to continue[1-3]: ${END}"
 read groupinput5
 
@@ -691,7 +695,7 @@ if [ "$groupinput5" = "1" ]; then
 
         printf "\n1. Single Group"
         printf "\n2. Multiple Groups"
-	  echo ""
+          echo ""
         printf "${GREEN}\nSelect option from above[1/2]: ${END}"
 read groupoption51
 
@@ -700,18 +704,18 @@ read groupoption51
 printf "\n${GREEN}Enter filename containing list of IP object names: ${END}"
 read file51
 
-grep -v '^[[:space:]]*$' $file51 > ~/junk/sortedlist51
+grep -v '^[[:space:]]*$' $file51 > ./junk/sortedlist51
 
-blank51=$(echo ~/junk/sortedlist51)
+blank51=$(echo ./junk/sortedlist51)
 
 printf "\n${GREEN}Enter group name: ${END}"
 read name51
 
-printf "$name51,%s\n" $(< $blank51) > ~/junk/iplistout51
+printf "$name51,%s\n" $(< $blank51) > ./junk/iplistout51
 
-sed -i '1s/^/name,members.add \n/' ~/junk/iplistout51
+sed -i '1s/^/name,members.add \n/' ./junk/iplistout51
 
-callout51=$(echo ~/junk/iplistout51)
+callout51=$(echo ./junk/iplistout51)
 
 time mgmt_cli set group --batch "$callout51" -s "$session"
 
@@ -730,11 +734,11 @@ read groupfile51
 awk -v OFS="," -v ORS="\r\n" '
     NR==FNR && NF>0 {a[++n]=$0; next}
     NF>0 {for (i=1; i<=n; i++) print $0, a[i]}
-' $file512 $groupfile51 > ~/junk/compactlist51
+' $file512 $groupfile51 > ./junk/compactlist51
 
-sed -i '1s/^/name,members.add \n/' ~/junk/compactlist51
+sed -i '1s/^/name,members.add \n/' ./junk/compactlist51
 
-deck51=$(echo ~/junk/compactlist51)
+deck51=$(echo ./junk/compactlist51)
 
 time mgmt_cli set group --batch "$deck51" -s "$session"
 
@@ -748,7 +752,7 @@ if [ "$groupinput5" = "2" ]; then
 
         printf "\n1. Single Group"
         printf "\n2. Multiple Groups"
-	  echo ""
+          echo ""
         printf "${GREEN}\nSelect option from above[1/2]: ${END}"
 read groupoption52
 
@@ -757,18 +761,18 @@ read groupoption52
 printf "${GREEN}Enter filename containing list of Service object names: ${END}"
 read file52
 
-grep -v '^[[:space:]]*$' $file52 > ~/junk/sortedlist52
+grep -v '^[[:space:]]*$' $file52 > ./junk/sortedlist52
 
-blank52=$(echo ~/junk/sortedlist52)
+blank52=$(echo ./junk/sortedlist52)
 
 printf "\n${GREEN}Enter service group name: ${END}"
 read name52
 
-printf "$name52,%s\n" $(< $blank52) > ~/junk/iplistout52
+printf "$name52,%s\n" $(< $blank52) > ./junk/iplistout52
 
-sed -i '1s/^/name,members.add \n/' ~/junk/iplistout52
+sed -i '1s/^/name,members.add \n/' ./junk/iplistout52
 
-callout52=$(echo ~/junk/iplistout52)
+callout52=$(echo ./junk/iplistout52)
 
 time mgmt_cli set service-group --batch "$callout52" -s "$session"
 
@@ -787,11 +791,11 @@ read groupfile52
 awk -v OFS="," -v ORS="\r\n" '
     NR==FNR && NF>0 {a[++n]=$0; next}
     NF>0 {for (i=1; i<=n; i++) print $0, a[i]}
-' $file522 $groupfile52 > ~/junk/compactlist52
+' $file522 $groupfile52 > ./junk/compactlist52
 
-sed -i '1s/^/name,members.add \n/' ~/junk/compactlist52
+sed -i '1s/^/name,members.add \n/' ./junk/compactlist52
 
-deck52=$(echo ~/junk/compactlist52)
+deck52=$(echo ./junk/compactlist52)
 
 time mgmt_cli set service-group --batch "$deck52" -s "$session"
 
@@ -803,7 +807,7 @@ fi
 
 if [ "$groupinput5" = "3" ]; then
 
-creaddobject
+createobject
 
 fi
 
