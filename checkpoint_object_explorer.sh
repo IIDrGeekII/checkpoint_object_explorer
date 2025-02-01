@@ -567,7 +567,7 @@ sed -i '1s/^/name,port \n/' ~/junk/outfin4
 
 call4=$(echo ~/junk/outfin4)
 
-time mgmt_cli add service-tcp --batch "$call4" -s "$session"
+time mgmt_cli add service-udp --batch "$call4" -s "$session"
 
 ##################
 
